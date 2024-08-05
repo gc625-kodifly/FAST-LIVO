@@ -4,7 +4,7 @@
 
 	<rosparam command="load" file="$(find fast_livo)/config/NTU_VIRAL.yaml" />
 
-	<node pkg="fast_livo" type="fastlivo_mapping" name="laserMapping" output="screen" >
+	<node pkg="fast_livo" type="fastlivo_mapping" name="laserMapping" output="screen" launch-prefix="gdb -ex run --args">
 		<rosparam file="$(find fast_livo)/config/camera_NTU_VIRAL.yaml" />
 	</node>
 	
@@ -13,5 +13,5 @@
 	</group>
 	<node pkg="image_transport" type="republish" name="republish" args="compressed in:=/left_camera/image raw out:=/left_camera/image" output="screen" respawn="true"/>
 
-launch-prefix="gdb -ex run --args"
+
 </launch> 	

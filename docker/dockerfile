@@ -1,0 +1,82 @@
+FROM osrf/ros:melodic-desktop-full
+
+# set ROS_DISTRO
+ARG ROS_DISTRO=melodic
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential wget \
+    ros-${ROS_DISTRO}-cv-bridge  \
+    ros-${ROS_DISTRO}-eigen-conversions \
+    ros-${ROS_DISTRO}-pcl-ros \
+    ros-${ROS_DISTRO}-rviz \
+    ros-${ROS_DISTRO}-image-transport* \ 
+    libfmt-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    libgl1-mesa-dev \
+    libglew-dev \
+    libsdl2-dev \
+    libsdl2-image-dev \
+    libglm-dev \
+    libfreetype6-dev \
+    libglfw3-dev \
+    libglfw3 \
+    libglu1-mesa-dev \
+    freeglut3-dev \
+    vim
+ENV NVIDIA_VISIBLE_DEVICES \
+${NVIDIA_VISIBLE_DEVICES:-all}
+
+ENV NVIDIA_DRIVER_CAPABILITIES \
+${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
+# FROM tiryoh/ros-melodic-desktop:latest
+
+
+# # Install necessary packages
+# RUN apt-get update && \
+#     apt-get install -y curl git cmake && \
+#     rm -rf /var/lib/apt/lists/*
+
+
+ARG USERNAME=admin
+
+
+# Create a non-root user and set up the environment
+RUN useradd ${USERNAME} --create-home --shell /bin/bash  && \
+    echo ${USERNAME}':newpassword' | chpasswd && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
+    chmod 777 /home/${USERNAME}
+
+# Update 'admin' user
+RUN echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME} \
+    && adduser ${USERNAME} video && adduser ${USERNAME} plugdev && adduser ${USERNAME} sudo
+
+
+# SSH stuff for git
+# RUN mkdir -p /home/${USERNAME}/.ssh && chmod 777 /home/${USERNAME}/.ssh
+
+# RUN --mount=type=secret,target=/run/secrets/host_ssh_key\
+#     cp /run/secrets/host_ssh_key /home/${USERNAME}/.ssh/id_rsa
+
+# RUN chown ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh/id_rsa
+# RUN ssh-keyscan github.com >> /home/${USERNAME}/.ssh/known_hosts
+
+RUN echo "source /opt/ros/melodic/setup.bash" >> /home/${USERNAME}/.bashrc
+
+# switch to the new user
+
+SHELL ["/bin/bash", "-c"]
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+
+# add user to groups for serial access
+RUN sudo usermod -a -G tty ${USERNAME} && \
+    sudo usermod -a -G dialout ${USERNAME}
+
+
