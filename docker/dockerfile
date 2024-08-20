@@ -1,4 +1,4 @@
-FROM osrf/ros:melodic-desktop-full
+FROM arm64v8/ros:melodic-perception-bionic
 
 # set ROS_DISTRO
 ARG ROS_DISTRO=melodic
@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-pcl-ros \
     ros-${ROS_DISTRO}-rviz \
     ros-${ROS_DISTRO}-image-transport* \ 
+    ros-${ROS_DISTRO}-tf-conversions \
     libfmt-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,7 +27,8 @@ RUN apt-get update && \
     libglfw3 \
     libglu1-mesa-dev \
     freeglut3-dev \
-    vim
+    vim \
+    ssh
 ENV NVIDIA_VISIBLE_DEVICES \
 ${NVIDIA_VISIBLE_DEVICES:-all}
 
@@ -58,25 +60,44 @@ RUN echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
 
 
 # SSH stuff for git
-# RUN mkdir -p /home/${USERNAME}/.ssh && chmod 777 /home/${USERNAME}/.ssh
+RUN mkdir -p /home/${USERNAME}/.ssh && chmod 777 /home/${USERNAME}/.ssh
 
-# RUN --mount=type=secret,target=/run/secrets/host_ssh_key\
-#     cp /run/secrets/host_ssh_key /home/${USERNAME}/.ssh/id_rsa
+RUN --mount=type=secret,target=/run/secrets/host_ssh_key\
+    cp /run/secrets/host_ssh_key /home/${USERNAME}/.ssh/id_rsa
 
-# RUN chown ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh/id_rsa
-# RUN ssh-keyscan github.com >> /home/${USERNAME}/.ssh/known_hosts
+RUN chown ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh/id_rsa
+RUN ssh-keyscan github.com >> /home/${USERNAME}/.ssh/known_hosts
 
-RUN echo "source /opt/ros/melodic/setup.bash" >> /home/${USERNAME}/.bashrc
-
-# switch to the new user
 
 SHELL ["/bin/bash", "-c"]
 USER ${USERNAME}
+
+
+
 WORKDIR /home/${USERNAME}
+RUN git clone git@github.com:gc625-kodifly/Sophus.git && \
+    cd Sophus && git checkout fast_livo && \ 
+    mkdir build && cd build && \
+    cmake .. && \
+    make && \
+    sudo make install 
+
+RUN git clone https://github.com/Livox-SDK/Livox-SDK.git && \
+    cd Livox-SDK && \ 
+    cd build && \
+    cmake .. && \
+    make && \
+    sudo make install 
+
+COPY mvs_driver mvs_driver
+RUN cd mvs_driver && sudo ./setup.sh
+# switch to the new user
+
+RUN echo "source /opt/ros/melodic/setup.bash" >> /home/${USERNAME}/.bashrc
+WORKDIR /home/${USERNAME}/workspace
 
 
 # add user to groups for serial access
 RUN sudo usermod -a -G tty ${USERNAME} && \
     sudo usermod -a -G dialout ${USERNAME}
-
 
