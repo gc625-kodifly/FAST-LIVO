@@ -1,4 +1,5 @@
-FROM arm64v8/ros:melodic-perception-bionic
+# FROM arm64v8/ros:melodic-perception-bionic
+FROM tiryoh/ros-melodic-desktop:latest
 
 # set ROS_DISTRO
 ARG ROS_DISTRO=melodic
@@ -45,7 +46,6 @@ ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 
 ARG USERNAME=admin
-
 
 # Create a non-root user and set up the environment
 RUN useradd ${USERNAME} --create-home --shell /bin/bash  && \
@@ -94,6 +94,7 @@ RUN cd mvs_driver && sudo ./setup.sh
 # switch to the new user
 
 RUN echo "source /opt/ros/melodic/setup.bash" >> /home/${USERNAME}/.bashrc
+RUN echo "source /home/${USERNAME}/workspace/devel/setup.bash" >> /home/${USERNAME}/.bashrc
 WORKDIR /home/${USERNAME}/workspace
 
 
